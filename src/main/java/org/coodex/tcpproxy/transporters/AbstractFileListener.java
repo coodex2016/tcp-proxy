@@ -164,7 +164,6 @@ public abstract class AbstractFileListener implements FileListener {
                         if (f.exists()) f.delete();
                     }
                 }, 50, TimeUnit.MILLISECONDS);
-
             }
         }
 

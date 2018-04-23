@@ -19,6 +19,8 @@ proxy.listener.encryptor=org.coodex.tcpproxy.transporters.BlankEncryptor
 # 接收数据时的超时时长，单位为毫秒。
 # 因为数据文件被切成小块了，且传递顺序不可控，当后面的数据块先到达时，最长可等待一段时间，保证数据的完整性
 proxy.listener.timeout=5000
+# 文件块大小
+proxy.listener.blockSize=40960
 
 # 远端tcp信息
 proxy.remote.address=www.telchina.com.cn
@@ -29,6 +31,7 @@ proxy.remote.port=80
 proxy.remote.path=/home/shenhainan/proxy
 proxy.remote.encryptor=org.coodex.tcpproxy.transporters.BlankEncryptor
 proxy.remote.timeout=5000
+proxy.remote.blockSize=40960
 ```
 
 ## 使用

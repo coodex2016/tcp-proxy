@@ -16,14 +16,13 @@
 
 package org.coodex.tcpproxy.transporters;
 
+import org.coodex.concurrent.Coalition;
+import org.coodex.concurrent.Debouncer;
 import org.coodex.util.Common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.coodex.tcpproxy.transporters.AbstractFileBasedTransporter.Type.RESPONSE;
@@ -36,7 +35,30 @@ public abstract class AbstractFileBasedTransporter extends AbstractTransporter {
     private final Encryptor encryptor;
     private final String path;
     private AtomicLong seq = new AtomicLong(0);
-
+    private ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    private Debouncer<ByteArrayOutputStream> debouncer = new Debouncer<>(
+            new Coalition.Callback<ByteArrayOutputStream>() {
+                @Override
+                public void call(ByteArrayOutputStream arg) {
+                    synchronized (AbstractFileBasedTransporter.this) {
+                        byte[] buf = outputStream.toByteArray();
+                        outputStream = new ByteArrayOutputStream();
+                        int offset = 0;
+                        while (offset < buf.length) {
+                            // 输出file
+                            int blockSize = Math.min(buf.length - offset, getBlockSize());
+                            try {
+                                writeToFile(encryptor.encrypt(buf, offset, blockSize));
+                            } catch (Throwable th) {
+                                throw th instanceof RuntimeException ?
+                                        (RuntimeException) th : new RuntimeException(th.getLocalizedMessage(), th);
+                            }
+                            offset += getBlockSize();
+                        }
+                    }
+                }
+            }, 50
+    );
 
     public AbstractFileBasedTransporter(String name, String path, Encryptor encryptor, int waitingTimeOut) {
         super(name);
@@ -54,19 +76,16 @@ public abstract class AbstractFileBasedTransporter extends AbstractTransporter {
 
     @Override
     public void write(byte[] buf) {
-        int offset = 0;
-        while (offset < buf.length) {
-            // 输出file
-            int blockSize = Math.min(buf.length - offset, getBlockSize());
+        synchronized (this) {
             try {
-                writeToFile(encryptor.encrypt(buf, offset, blockSize));
-            } catch (Throwable th) {
-                throw th instanceof RuntimeException ?
-                        (RuntimeException) th : new RuntimeException(th.getLocalizedMessage(), th);
+                outputStream.write(buf);
+                debouncer.call(outputStream);
+            } catch (IOException e) {
+
             }
-            offset += getBlockSize();
         }
     }
+
 
     /**
      * 文件名格式：name_sessionId_index_size.[req|res]
@@ -91,7 +110,7 @@ public abstract class AbstractFileBasedTransporter extends AbstractTransporter {
     public void close() {
         String fileName = String.format("%s_%d_close.%s", getName(), getId(), fileType());
         try {
-            Common.getNewFile(path+ Common.FILE_SEPARATOR + fileName);
+            Common.getNewFile(path + Common.FILE_SEPARATOR + fileName);
         } catch (IOException e) {
             throw new RuntimeException(e.getLocalizedMessage(), e);
         }

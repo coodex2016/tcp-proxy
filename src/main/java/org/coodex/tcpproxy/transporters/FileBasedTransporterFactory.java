@@ -30,7 +30,7 @@ public class FileBasedTransporterFactory implements TransporterFactory {
             new SingletonMap.Builder<String, ProxySideFileListener>() {
                 @Override
                 public ProxySideFileListener build(String key) {
-                    String path = profile.getString(key + ".listener.path");
+                    String path = profile.getString(key + ".listener.path.read");
                     ProxySideFileListener listener =
                             new ProxySideFileListener(key,
                                     profile.getInt(key + ".listener.timeout"));
@@ -46,7 +46,7 @@ public class FileBasedTransporterFactory implements TransporterFactory {
 
         ProxySideFileBasedTransporter transporter =
                 new ProxySideFileBasedTransporter(name,
-                        profile.getString(name + ".listener.path"),
+                        profile.getString(name + ".listener.path.write"),
                         encryptors.getInstance(profile.getString(name + ".listener.encryptor")),
                         blockSize,
                         ctx.channel(),

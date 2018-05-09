@@ -43,7 +43,7 @@ public class InvokerSideDamon {
         FileListener listener = new InvokerSideFileListener(name,
                 profile.getInt(name + ".remote.timeout", 2000));
         FileWatching.getInstance().register(
-                profile.getString(name + ".remote.path"),
+                profile.getString(name + ".remote.path.read"),
                 listener
         );
     }

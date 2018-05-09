@@ -31,7 +31,7 @@ public class InvokerSideFileBasedTransporter extends AbstractFileBasedTransporte
 
     public InvokerSideFileBasedTransporter(String name, Encryptor encryptor, Long sessionId) {
         super(name,
-                profile.getString(name + ".remote.path"),
+                profile.getString(name + ".remote.path.write"),
                 encryptor,
                 profile.getInt(name + ".remote.timeout", 2000));
         this.sessionId = sessionId;
